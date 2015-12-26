@@ -8,7 +8,12 @@
 #include <sys/user.h>
 #include <unistd.h>
 
-int trace(std::string program_path, std::string program_args) {
+#include "Trace.pb.h"
+
+int trace(std::string program_path, std::string program_args, std::string output) {
+  //write out the output file with an initial register map
+
+  //fork now
   pid_t c = fork();
 
   if(c > 0) {
@@ -70,6 +75,7 @@ int main(int argc, char *argv[]) {
 
   desc.add_options()
     ("input,i", boost::program_options::value<std::string>()->required(), "input")
+    ("output,o", boost::program_options::value<std::string>(), "output")
     ("help,h", "Help")
   ;
 
@@ -90,5 +96,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  return trace(vm["input"].as<std::string>(), "");
+  std::string output = "trace";
+
+  if(vm.count("output")) {
+    output = vm["output"].as<std::string>();
+  }
+
+  return trace(vm["input"].as<std::string>(), "", output);
 }
