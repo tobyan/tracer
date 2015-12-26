@@ -91,7 +91,9 @@ int trace(std::string program_path, std::string program_args, std::string output
 
   std::string regMapOut = regMap.SerializeAsString();
 
-  FILE  *out = fopen(output.c_str(), "w");
+  FILE      *out = fopen(output.c_str(), "w");
+  uint64_t  sz = regMapOut.size();
+  fwrite(&sz, 1, sizeof(uint64_t), out);
   fwrite(regMapOut.c_str(), 1, regMapOut.size(), out);
   fclose(out);
 
@@ -135,7 +137,8 @@ int trace(std::string program_path, std::string program_args, std::string output
       TraceEvent t = mktrace(eipbuff, count, &regs);
 
       std::string traceOut = t.SerializeAsString();
-
+      sz = traceOut.size();
+      fwrite(&sz, 1, sizeof(uint64_t), out);
       fwrite(traceOut.c_str(), 1, traceOut.size(), out);
       
       count++;
