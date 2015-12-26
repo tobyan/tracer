@@ -1,0 +1,21 @@
+message Register { 
+  required int32 register_number = 1;
+  required string register_name = 2;
+  required int32 register_size = 3;
+}
+
+message RegisterMap {
+  repeated Register register_map = 1;
+}
+
+message Registers {
+  required  int32 register_number = 1;
+  required  bytes register_value = 2;
+}
+
+message TraceEvent {
+  required int64      tc = 1;
+  required bytes      instruction = 2;
+  repeated Registers  regs = 3;
+  required int32      tid = 4;
+}
