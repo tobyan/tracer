@@ -47,6 +47,7 @@ TraceEvent mktrace( unsigned char           instbuff[16],
   WRITE_REG(20, r->es, 64);
   WRITE_REG(21, r->fs, 64);
   WRITE_REG(22, r->gs, 64);
+  WRITE_REG(23, r->rdx, 64);
 
   #undef WRITE_REG
 
@@ -86,6 +87,7 @@ int trace(std::string program_path, std::string program_args, std::string output
   ADD_REG(20, "es", 64);
   ADD_REG(21, "fs", 64);
   ADD_REG(22, "gs", 64);
+  ADD_REG(23, "rdx", 64);
 
   #undef ADD_REG
 
@@ -134,10 +136,11 @@ int trace(std::string program_path, std::string program_args, std::string output
       ptrace(PTRACE_SINGLESTEP, c, NULL, NULL);
 
       //save our stuff to the buffer
-      TraceEvent t = mktrace(eipbuff, count, &regs);
-
+      TraceEvent  t = mktrace(eipbuff, count, &regs);
       std::string traceOut = t.SerializeAsString();
+
       sz = traceOut.size();
+
       fwrite(&sz, 1, sizeof(uint64_t), out);
       fwrite(traceOut.c_str(), 1, traceOut.size(), out);
       
