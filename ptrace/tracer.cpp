@@ -12,7 +12,9 @@
 
 TraceEvent mktrace( unsigned char           instbuff[16], 
                     uint64_t                tc, 
-                    struct user_regs_struct *r) 
+                    struct user_regs_struct *r,
+                    struct user_regs_struct *oldr,
+                    bool                    first) 
 {
   TraceEvent  t;
 
@@ -20,36 +22,72 @@ TraceEvent mktrace( unsigned char           instbuff[16],
   t.set_instruction(&instbuff[0], 16);
   t.set_tid(1);
 
-  #define WRITE_REG(n, a, sz) \
-    Registers *r##n = t.add_regs(); \
-    r##n->set_register_number(n); \
-    r##n->set_register_value(&a, sizeof(a))
-  WRITE_REG(0, r->r15, 64);
-  WRITE_REG(1, r->r14, 64);
-  WRITE_REG(2, r->r13, 64);
-  WRITE_REG(3, r->r12, 64);
-  WRITE_REG(4, r->rbp, 64);
-  WRITE_REG(5, r->rbx, 64);
-  WRITE_REG(6, r->r11, 64);
-  WRITE_REG(7, r->r10, 64);
-  WRITE_REG(8, r->r9, 64);
-  WRITE_REG(9, r->r8, 64);
-  WRITE_REG(10, r->rax, 64);
-  WRITE_REG(11, r->rcx, 64);
-  WRITE_REG(12, r->rsi, 64);
-  WRITE_REG(13, r->rdi, 64);
-  WRITE_REG(14, r->rip, 64);
-  WRITE_REG(15, r->cs, 64);
-  WRITE_REG(16, r->eflags, 64);
-  WRITE_REG(17, r->rsp, 64);
-  WRITE_REG(18, r->ss, 64);
-  WRITE_REG(19, r->ds, 64);
-  WRITE_REG(20, r->es, 64);
-  WRITE_REG(21, r->fs, 64);
-  WRITE_REG(22, r->gs, 64);
-  WRITE_REG(23, r->rdx, 64);
+  if(first) {
+    #define WRITE_REG(n, a, sz) \
+      Registers *r##n = t.add_regs(); \
+      r##n->set_register_number(n); \
+      r##n->set_register_value(&a, sizeof(a))
+    WRITE_REG(0, r->r15, 64);
+    WRITE_REG(1, r->r14, 64);
+    WRITE_REG(2, r->r13, 64);
+    WRITE_REG(3, r->r12, 64);
+    WRITE_REG(4, r->rbp, 64);
+    WRITE_REG(5, r->rbx, 64);
+    WRITE_REG(6, r->r11, 64);
+    WRITE_REG(7, r->r10, 64);
+    WRITE_REG(8, r->r9, 64);
+    WRITE_REG(9, r->r8, 64);
+    WRITE_REG(10, r->rax, 64);
+    WRITE_REG(11, r->rcx, 64);
+    WRITE_REG(12, r->rsi, 64);
+    WRITE_REG(13, r->rdi, 64);
+    WRITE_REG(14, r->rip, 64);
+    WRITE_REG(15, r->cs, 64);
+    WRITE_REG(16, r->eflags, 64);
+    WRITE_REG(17, r->rsp, 64);
+    WRITE_REG(18, r->ss, 64);
+    WRITE_REG(19, r->ds, 64);
+    WRITE_REG(20, r->es, 64);
+    WRITE_REG(21, r->fs, 64);
+    WRITE_REG(22, r->gs, 64);
+    WRITE_REG(23, r->rdx, 64);
 
-  #undef WRITE_REG
+    #undef WRITE_REG
+  } else {
+    #define WRITE_REG(n, a, sz) \
+      if( a != old##a ) { \
+      Registers *r##n = t.add_regs(); \
+      r##n->set_register_number(n); \
+      r##n->set_register_value(&a, sizeof(a)); \
+      }
+    WRITE_REG(0, r->r15, 64);
+    WRITE_REG(1, r->r14, 64);
+    WRITE_REG(2, r->r13, 64);
+    WRITE_REG(3, r->r12, 64);
+    WRITE_REG(4, r->rbp, 64);
+    WRITE_REG(5, r->rbx, 64);
+    WRITE_REG(6, r->r11, 64);
+    WRITE_REG(7, r->r10, 64);
+    WRITE_REG(8, r->r9, 64);
+    WRITE_REG(9, r->r8, 64);
+    WRITE_REG(10, r->rax, 64);
+    WRITE_REG(11, r->rcx, 64);
+    WRITE_REG(12, r->rsi, 64);
+    WRITE_REG(13, r->rdi, 64);
+    WRITE_REG(14, r->rip, 64);
+    WRITE_REG(15, r->cs, 64);
+    WRITE_REG(16, r->eflags, 64);
+    WRITE_REG(17, r->rsp, 64);
+    WRITE_REG(18, r->ss, 64);
+    WRITE_REG(19, r->ds, 64);
+    WRITE_REG(20, r->es, 64);
+    WRITE_REG(21, r->fs, 64);
+    WRITE_REG(22, r->gs, 64);
+    WRITE_REG(23, r->rdx, 64);
+
+    #undef WRITE_REG
+
+  }
 
   return t;
 }
@@ -109,6 +147,9 @@ int trace(std::string program_path, std::string program_args, std::string output
     //do the tracing 
     int status;
     
+    struct user_regs_struct old_regs = { 0 };
+    bool s = true;
+
     while(true) {
       wait(&status);
 
@@ -136,7 +177,7 @@ int trace(std::string program_path, std::string program_args, std::string output
       ptrace(PTRACE_SINGLESTEP, c, NULL, NULL);
 
       //save our stuff to the buffer
-      TraceEvent  t = mktrace(eipbuff, count, &regs);
+      TraceEvent  t = mktrace(eipbuff, count, &regs, &old_regs, s);
       std::string traceOut = t.SerializeAsString();
 
       sz = traceOut.size();
@@ -145,6 +186,8 @@ int trace(std::string program_path, std::string program_args, std::string output
       fwrite(traceOut.c_str(), 1, traceOut.size(), out);
       
       count++;
+      old_regs = regs;
+      s = false;
     }
     
     fclose(out);
