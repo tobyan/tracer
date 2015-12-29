@@ -3,6 +3,7 @@
 import distorm3
 import Trace_pb2
 import struct
+import argparse
 
 def main():
   inf = open("trace", "r")
@@ -24,6 +25,10 @@ def main():
   for u in regmap.register_map:
     mr[u.register_name] = u.register_number
 
+  regstate = {}
+  for u in regmap.register_map:
+    regstate[u.register_name] = None
+
   #now read each trace event 
   while cur < len(buf):
     reclen = struct.unpack("@Q", buf[cur:cur+8])[0]
@@ -31,6 +36,9 @@ def main():
     te = Trace_pb2.TraceEvent()
     te.ParseFromString(buf[cur:cur+reclen])
     cur = cur + reclen
+
+    for i in te.regs:
+      regstate[rm[i.register_number]] = struct.unpack("@Q", i.register_value)[0]
     
     pc = 0
     for i in te.regs:
@@ -42,13 +50,12 @@ def main():
     print "==============="
     s = ""
     c = 0
-    for i in te.regs:
-      if i.register_number != mr["rip"]:
-        val = struct.unpack("@Q", i.register_value)[0]
+    for nm in regstate.keys():
+      if nm != "rip":
         if c > 80:
           c = 0
           s = s + "\n"
-        u = "%s = %x  " % (rm[i.register_number], val)
+        u = "%s = %x  " % (nm, regstate[nm])
         s = s + u
         c = c + len(u)
     print s
