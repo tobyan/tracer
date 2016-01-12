@@ -53,15 +53,21 @@ Tracer::start()
 	if (_pid > 0) {
     startProcessingEvents();
 	} else if (_pid == 0) {
-    boost::filesystem::path bpath {_path};
-    auto cpath = boost::filesystem::canonical(bpath);
+    boost::filesystem::path bpath {_cmdline[0]};
 
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-    int status = execl(cpath.string().c_str(),
-                       cpath.filename().string().c_str(), NULL);
+
+    std::vector<const char *> arguments;
+
+    for (auto arg : _cmdline)
+      arguments.push_back(arg.c_str());
+    arguments.push_back(nullptr);
+    
+    char **cmd = (char **) &arguments[0];
+    int status = execvp(cmd[0], cmd);
 
     if (status < 0) {
-      perror("err on execl");
+      perror("Error starting client: ");
     } else {
       assert(0);
     }

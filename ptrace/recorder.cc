@@ -11,10 +11,6 @@ Recorder::recordState(const State &state)
   event.set_instruction(state.instruction.data(), state.instruction.size());
   event.set_tid(1);
 
-  if (!_written == 0) {
-    // TODO
-  }
-
   #define REG(n, a, sz)                            \
   if( state.registerState.a !=                     \
             _previous_state.registerState.a ) {    \

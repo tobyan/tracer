@@ -8,10 +8,13 @@
 class Tracer {
 
   using ProgramStateT = struct user_regs_struct;
+
   using ListenerT = std::function<void(pid_t pid, const ProgramStateT&)>;
 
   public:
-    explicit Tracer(const std::string &path):_path(path) { }
+    explicit Tracer(const std::vector<std::string> &args)
+    : _cmdline{args} {}
+    explicit Tracer(const std::string &path):_cmdline{path} { }
     
     void     addListener(ListenerT listener);
     
@@ -31,5 +34,6 @@ class Tracer {
     uint64_t _instructionCount;
 
     std::vector<ListenerT> _listeners;
-    std::string _path;
+
+    std::vector<std::string> _cmdline;
 };

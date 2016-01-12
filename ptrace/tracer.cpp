@@ -12,16 +12,34 @@
 #include "tracer.h"
 #include "recorder.h"
 
-using std::vector;
-using std::string;
+int trace(std::string program_path, std::string program_args, std::string output) {
+
+  Tracer instructionTracer {program_path};
+  Recorder stateRecorder {output};
+
+  instructionTracer.addListener([&](pid_t pid, const struct user_regs_struct &regs) {
+      std::array<uint8_t, 16> eipbuff;
+
+      uint64_t count = instructionTracer.count();
+
+      auto eipbuf = instructionTracer.getClientMemory<16>((caddr_t) regs.rip);
+
+      stateRecorder.recordState(Recorder::State{regs, eipbuff});
+
+  });
+
+  instructionTracer.start();
+
+  return 0;
+}
 
 int main(int argc, char *argv[]) {
   boost::program_options::variables_map       vm;
   boost::program_options::options_description desc("Options");
 
   desc.add_options()
-    ("input,i", boost::program_options::value<vector<string>>()->required(), "input")
-    ("output,o", boost::program_options::value<string>(), "output")
+    ("input,i", boost::program_options::value<std::string>()->required(), "input")
+    ("output,o", boost::program_options::value<std::string>(), "output")
     ("help,h", "Help")
   ;
 
@@ -42,23 +60,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  string output = "trace";
+  std::string output = "trace";
+
   if(vm.count("output")) {
-    output = vm["output"].as<string>();
+    output = vm["output"].as<std::string>();
   }
 
-  auto input_args = vm["input"].as<vector<string>>();
-
-  Tracer instructionTracer {input_args};
-  Recorder stateRecorder {output};
-
-  instructionTracer.addListener([&](pid_t pid, const struct user_regs_struct &regs) {
-
-      caddr_t addr = (caddr_t) regs.rip;
-      auto eipbuf = instructionTracer.getClientMemory<16>(addr);
-
-      stateRecorder.recordState(Recorder::State{regs, eipbuf});
-  });
-
-  instructionTracer.start();
+  return trace(vm["input"].as<std::string>(), "", output);
 }
