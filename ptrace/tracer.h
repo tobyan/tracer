@@ -28,14 +28,15 @@ class Tracer {
     void     addListener(ListenerT listener);
     
     /**
-     * @brief Read N bytes of memory from inferior process.
+     * @brief Read n bytes of memory from inferior process.
      *
      * @param addr The address at which to read from
-     * @return An std::array containing the bytes
+     * @param n The number of bytes
+     * @return An std::vector containing the bytes
      */
 
-    template <size_t N> std::array<uint8_t, N> 
-    getClientMemory(caddr_t addr);
+    std::vector<uint8_t> 
+    getClientMemory(caddr_t addr, size_t n);
     
      /**
       * @brief Start executing the child process and invoking all interested

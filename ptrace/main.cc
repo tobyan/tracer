@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   instructionTracer.addListener([&](const struct user_regs_struct &regs) {
 
       caddr_t addr = (caddr_t) regs.rip;
-      auto eipbuf = instructionTracer.getClientMemory<16>(addr);
+      auto eipbuf = instructionTracer.getClientMemory(addr, 16);
 
       stateRecorder.recordState(Recorder::State{regs, eipbuf});
   });

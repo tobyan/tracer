@@ -78,17 +78,19 @@ Tracer::start()
   return startProcessingEvents();
 }
 
-template <size_t N> std::array<uint8_t, N>
-Tracer::getClientMemory(caddr_t addr)
+std::vector<uint8_t>
+Tracer::getClientMemory(caddr_t addr, size_t n)
 {
   long val;
-  size_t remaining = N;
+  size_t remaining = n;
   size_t offset = 0;
-  std::array<uint8_t, N> arr;
+  std::vector<uint8_t> arr(n);
 
   while (remaining > 0) {
     size_t to_copy = std::min(remaining, sizeof(val));
+
     val = ptrace(PTRACE_PEEKTEXT, _pid, addr, NULL);
+    
     memcpy(arr.data() + offset, &val, to_copy);
     remaining -= to_copy;
     offset += to_copy;
@@ -97,4 +99,4 @@ Tracer::getClientMemory(caddr_t addr)
   return arr;
 }
 
-template std::array<uint8_t, 16> Tracer::getClientMemory<16>(caddr_t addr);
+//template std::array<uint8_t, 16> Tracer::getClientMemory<16>(caddr_t addr);

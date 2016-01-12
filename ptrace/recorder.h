@@ -16,7 +16,7 @@ public:
 
   struct State {
     struct user_regs_struct registerState;
-    std::array<uint8_t, 16> instruction;
+    std::vector<uint8_t> instruction;
   };
 
 public:
