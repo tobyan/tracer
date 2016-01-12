@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
   Tracer instructionTracer {input_args};
   Recorder stateRecorder {output};
 
-  instructionTracer.addListener([&](pid_t pid, const struct user_regs_struct &regs) {
+  instructionTracer.addListener([&](const struct user_regs_struct &regs) {
 
       caddr_t addr = (caddr_t) regs.rip;
       auto eipbuf = instructionTracer.getClientMemory<16>(addr);

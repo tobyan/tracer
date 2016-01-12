@@ -26,6 +26,12 @@ public:
   {
     _writeHeader();
   }
+
+  /**
+   * @brief Log an instance of State to disk.
+   *
+   * @param The program state to be logged
+   */
   void recordState(const State &state);
 
 private:

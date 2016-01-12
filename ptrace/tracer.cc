@@ -19,7 +19,7 @@ Tracer::addListener(Tracer::ListenerT listener)
   _listeners.push_back(listener);
 }
 
-void
+int
 Tracer::startProcessingEvents()
 {
 	int status;
@@ -28,31 +28,29 @@ Tracer::startProcessingEvents()
 		wait(&status);
 
     if(WIFEXITED(status) || WIFSIGNALED(status)) 
-      break;
+      return WEXITSTATUS(status);
     
     if (WIFSTOPPED(status) && WSTOPSIG(status) != SIGTRAP)
-      break;
-    
-      struct user_regs_struct regs;
-      ptrace(PTRACE_GETREGS, _pid, NULL, &regs);
+      return -1;
+  
+    struct user_regs_struct regs;
+    ptrace(PTRACE_GETREGS, _pid, NULL, &regs);
 
-      for (auto listener : _listeners)
-        listener(_pid, regs);
+    for (auto listener : _listeners)
+      listener(regs);
 
-      ptrace(PTRACE_SINGLESTEP, _pid, NULL, NULL);
-      _instructionCount++;
+    ptrace(PTRACE_SINGLESTEP, _pid, NULL, NULL);
+    _instructionCount++;
 
-    }
+  }
 }
 
-void
+int
 Tracer::start()
 {
 	_pid = fork();
 
-	if (_pid > 0) {
-    startProcessingEvents();
-	} else if (_pid == 0) {
+	if (_pid == 0) {
     boost::filesystem::path bpath {_cmdline[0]};
 
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
@@ -69,10 +67,15 @@ Tracer::start()
     if (status < 0) {
       perror("Error starting client: ");
     } else {
-      assert(0);
+      assert(0);      /** NORETURN */
     }
 	} 
 
+  if (_pid < 0) {
+    return -1;
+  }
+
+  return startProcessingEvents();
 }
 
 template <size_t N> std::array<uint8_t, N>
