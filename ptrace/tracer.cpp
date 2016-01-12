@@ -80,10 +80,14 @@ int trace(std::string program_path, std::string program_args, std::string output
     while(true) {
       wait(&status);
 
-      if(WIFEXITED(status)) {
+      if(WIFEXITED(status) || WIFSIGNALED(status)) {
         break;
       }
 
+
+      if (WIFSTOPPED(status) && WSTOPSIG(status) != SIGTRAP) {
+        break;
+      }
       //get registers
       struct user_regs_struct regs;
 
