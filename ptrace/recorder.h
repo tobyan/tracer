@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <array>
 #include <vector>
-#include <sys/ptrace.h>
 #include <sys/user.h>
 #include <fstream>
 

@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 
+#include "host.h"
+
 #pragma once
 
 class Tracer {
@@ -13,10 +15,11 @@ class Tracer {
 
   public:
     explicit Tracer(const std::vector<std::string> &args)
-    : _cmdline{args} {}
-    explicit Tracer(const std::string &path):_cmdline{path} { }
+    : _cmdline{args}, _os_trace{std::make_unique<LinuxHostSupport>()} {}
+    explicit Tracer(const std::string &path)
+    :Tracer{std::vector<std::string>{path}} {}
 
-    Tracer(Tracer *rhs) = delete;
+    Tracer(Tracer &rhs) = delete;
     
     /**
      * @brief Add a functor that is invoked each time an instruction is 
@@ -36,7 +39,7 @@ class Tracer {
      */
 
     std::vector<uint8_t> 
-    getClientMemory(caddr_t addr, size_t n);
+    getClientMemory(uint64_t addr, size_t n);
     
      /**
       * @brief Start executing the child process and invoking all interested
@@ -73,4 +76,6 @@ class Tracer {
     std::vector<ListenerT> _listeners;
 
     std::vector<std::string> _cmdline;
+
+    std::unique_ptr<OSTraceSupport> _os_trace;
 };

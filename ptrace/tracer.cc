@@ -34,12 +34,13 @@ Tracer::startProcessingEvents()
       return -1;
   
     struct user_regs_struct regs;
-    ptrace(PTRACE_GETREGS, _pid, NULL, &regs);
+    _os_trace->getRegisters((void*)&regs);
 
     for (auto listener : _listeners)
       listener(regs);
 
-    ptrace(PTRACE_SINGLESTEP, _pid, NULL, NULL);
+    _os_trace->step();
+
     _instructionCount++;
 
   }
@@ -53,7 +54,7 @@ Tracer::start()
 	if (_pid == 0) {
     boost::filesystem::path bpath {_cmdline[0]};
 
-    ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+    _os_trace->traceMe();
 
     std::vector<const char *> arguments;
 
@@ -75,11 +76,13 @@ Tracer::start()
     return -1;
   }
 
+  _os_trace->setPid(_pid);
+
   return startProcessingEvents();
 }
 
 std::vector<uint8_t>
-Tracer::getClientMemory(caddr_t addr, size_t n)
+Tracer::getClientMemory(uint64_t addr, size_t n)
 {
   long val;
   size_t remaining = n;
@@ -89,7 +92,7 @@ Tracer::getClientMemory(caddr_t addr, size_t n)
   while (remaining > 0) {
     size_t to_copy = std::min(remaining, sizeof(val));
 
-    val = ptrace(PTRACE_PEEKTEXT, _pid, addr, NULL);
+    val = _os_trace->peekText(addr);
     
     memcpy(arr.data() + offset, &val, to_copy);
     remaining -= to_copy;
