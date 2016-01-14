@@ -11,9 +11,14 @@
 #include "Trace.pb.h"
 #include "tracer.h"
 #include "recorder.h"
+#include "registerfile.h"
+
 
 using std::vector;
 using std::string;
+
+boost::bimap<std::string, unsigned int> RegisterFile::kRegisterNameMap;
+bool RegisterFile::_map_initialized = 0;
 
 int main(int argc, char *argv[]) {
   boost::program_options::variables_map       vm;
@@ -51,13 +56,19 @@ int main(int argc, char *argv[]) {
 
   Tracer instructionTracer {input_args};
   Recorder stateRecorder {output};
+  RegisterFile previous;
 
   instructionTracer.addListener([&](const struct user_regs_struct &regs) {
 
       uint64_t addr = (uint64_t) regs.rip;
       auto eipbuf = instructionTracer.getClientMemory(addr, 16);
 
+      RegisterFile current {&regs};
+      // current.getDelta(previous)
+
       stateRecorder.recordState(Recorder::State{regs, eipbuf});
+      previous = current;
+
   });
 
   instructionTracer.start();

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "host.h"
+#include "registerfile.h"
 
 #pragma once
 
