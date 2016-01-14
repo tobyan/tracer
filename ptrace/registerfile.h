@@ -73,7 +73,6 @@ private:
   static void _initializeMap() {
     using entry = boost::bimap<std::string, unsigned int>::value_type;
 
-    kRegisterNameMap.insert( entry ("r15", 0));
     kRegisterNameMap.insert( entry ("r15", 0) );
     kRegisterNameMap.insert( entry ("r14", 1) );
     kRegisterNameMap.insert( entry ("r13", 2) );
