@@ -32,6 +32,13 @@ class Tracer {
     void     addListener(ListenerT listener);
     
     /**
+     * @brief A handler to call when tracing is finished
+     */
+    void     onComplete(std::function<void()> cb) {
+        _complete_callback = cb;
+    } 
+
+    /**
      * @brief Read n bytes of memory from inferior process.
      *
      * @param addr The address at which to read from
@@ -75,6 +82,8 @@ class Tracer {
     uint64_t _instructionCount;
 
     std::vector<ListenerT> _listeners;
+
+    std::function<void(void)> _complete_callback;
 
     std::vector<std::string> _cmdline;
 

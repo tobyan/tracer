@@ -8,6 +8,8 @@
 #include <sys/user.h>
 #include <unistd.h>
 
+#include <capstone/capstone.h>
+
 #include "Trace.pb.h"
 #include "tracer.h"
 #include "recorder.h"
@@ -23,6 +25,8 @@ bool RegisterFile::_map_initialized = 0;
 int main(int argc, char *argv[]) {
   boost::program_options::variables_map       vm;
   boost::program_options::options_description desc("Options");
+  csh handle;
+  cs_insn *insn;
 
   desc.add_options()
     ("input,i", boost::program_options::value<vector<string>>()->required(), "input")
@@ -52,7 +56,16 @@ int main(int argc, char *argv[]) {
     output = vm["output"].as<string>();
   }
 
+  if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
+    return 1;
+  }
+
+
+
+
+
   auto input_args = vm["input"].as<vector<string>>();
+  size_t count;
 
   Tracer instructionTracer {input_args};
   Recorder stateRecorder {output};
@@ -60,14 +73,25 @@ int main(int argc, char *argv[]) {
 
   instructionTracer.addListener([&](const struct user_regs_struct &regs) {
 
-      uint64_t addr = (uint64_t) regs.rip;
-      auto eipbuf = instructionTracer.getClientMemory(addr, 16);
+    uint64_t rip = (uint64_t) regs.rip;
 
-      RegisterFile current {&regs};
-      // current.getDelta(previous)
+    RegisterFile current {&regs};
 
-      stateRecorder.recordState(Recorder::State{regs, eipbuf});
-      previous = current;
+    // Delta is not used yet
+    auto delta = current.getDelta(previous);
+
+    auto eipbuf = instructionTracer.getClientMemory(rip, 16);
+    count = cs_disasm_ex(handle, &eipbuf[0], 16, regs.rip, 1, &insn);
+    if (count == 1) {
+      eipbuf.resize(insn->size);
+    }
+
+    stateRecorder.recordState(Recorder::State{regs, eipbuf});
+
+    previous = current;
+  });
+
+  instructionTracer.onComplete([]() {
 
   });
 

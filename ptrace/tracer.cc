@@ -27,11 +27,14 @@ Tracer::startProcessingEvents()
 	for (;;) { 
 		wait(&status);
 
-    if(WIFEXITED(status) || WIFSIGNALED(status)) 
-      return WEXITSTATUS(status);
+    if(WIFEXITED(status) || WIFSIGNALED(status)) {
+      status = WEXITSTATUS(status);
+      break;
+    }
     
-    if (WIFSTOPPED(status) && WSTOPSIG(status) != SIGTRAP)
-      return -1;
+    if (WIFSTOPPED(status) && WSTOPSIG(status) != SIGTRAP) {
+      status = -1;
+    }
   
     struct user_regs_struct regs;
     _os_trace->getRegisters((void*)&regs);
@@ -42,8 +45,11 @@ Tracer::startProcessingEvents()
     _os_trace->step();
 
     _instructionCount++;
-
   }
+
+  _complete_callback();
+  
+  return status;
 }
 
 int
