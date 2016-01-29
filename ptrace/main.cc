@@ -75,6 +75,13 @@ int main(int argc, char *argv[]) {
 
     uint64_t rip = (uint64_t) regs.rip;
 
+    if(!instructionTracer.addressWithinImage(rip)) {
+      return;
+    } else {
+      std::cout << ".";
+    }
+
+
     RegisterFile current {&regs};
 
     // Delta is not used yet

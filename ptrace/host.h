@@ -1,6 +1,8 @@
 
 #include <sys/ptrace.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/user.h>
 
 #pragma once
 
@@ -9,6 +11,7 @@ public:
   virtual ~OSTraceSupport(){}
 
   void setPid(pid_t pid) { _pid = pid; }
+  virtual long waitUntilExec() = 0;
   virtual void traceMe() = 0;
   virtual void step() = 0;
   virtual void getRegisters(void *dest) = 0;
@@ -38,5 +41,15 @@ public:
 
   virtual long peekData(uint64_t addr) override {
     return ptrace(PTRACE_PEEKDATA, _pid, (caddr_t)addr, NULL);
+  }
+
+  virtual long waitUntilExec() override {
+    int status;
+
+    ptrace(PTRACE_SETOPTIONS, _pid, PTRACE_O_TRACEEXEC|PTRACE_O_TRACESYSGOOD|PTRACE_O_TRACECLONE|PTRACE_O_TRACEFORK|PTRACE_O_TRACEVFORK, NULL);
+
+    waitpid(_pid, &status, 0);
+
+    return 0;
   }
 };

@@ -2,8 +2,10 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <exception>
 
 #include "host.h"
+#include "process.h"
 #include "registerfile.h"
 
 #pragma once
@@ -15,8 +17,8 @@ class Tracer {
   using ListenerT = std::function<void(const ProgramStateT&)>;
 
   public:
-    explicit Tracer(const std::vector<std::string> &args)
-    : _cmdline{args}, _os_trace{std::make_unique<LinuxHostSupport>()} {}
+    explicit Tracer(const std::vector<std::string> &args);
+
     explicit Tracer(const std::string &path)
     :Tracer{std::vector<std::string>{path}} {}
 
@@ -70,15 +72,31 @@ class Tracer {
      * 
      * @return The pid
      */
-    pid_t pid() const { return _pid; }
+    pid_t pid() const { return _process.pid(); }
 
+    /**
+     *
+     */
+    bool addressWithinImage(uintptr_t address) { 
+        return _process.addressWithinImage(address); 
+    }
+
+    struct bad_process : public std::exception { 
+        bad_process(std::string reason)
+        :_reason(reason) {
+
+        }
+        std::string _reason;
+    };
   private:
+    friend class Process;
     /**
      * @brief Start the actual loop that receives tracing events from the OS
      */
   	int startProcessingEvents();
 
-    pid_t _pid;
+    Process _process;
+
     uint64_t _instructionCount;
 
     std::vector<ListenerT> _listeners;

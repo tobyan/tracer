@@ -48,17 +48,18 @@ Tracer::startProcessingEvents()
   }
 
   _complete_callback();
-  
+
   return status;
 }
 
-int
-Tracer::start()
+Tracer::Tracer(const std::vector<std::string> &args)
+: _cmdline{args}, _os_trace{std::make_unique<LinuxHostSupport>()}
 {
-	_pid = fork();
+  int status;
+  int pid = fork();
+  boost::filesystem::path bpath {_cmdline[0]};
 
-	if (_pid == 0) {
-    boost::filesystem::path bpath {_cmdline[0]};
+  if (pid == 0) {
 
     _os_trace->traceMe();
 
@@ -76,14 +77,28 @@ Tracer::start()
     } else {
       assert(0);      /** NORETURN */
     }
-	} 
+    return;
+  } 
 
-  if (_pid < 0) {
-    return -1;
+  if (pid < 0) {
+    throw bad_process("Couldn't start process");
   }
 
-  _os_trace->setPid(_pid);
+  // Wait for the execv
+  waitpid(pid, &status, 0);
 
+  _os_trace->setPid(pid);
+
+  _process.setPid(pid);
+  _process.setAbsolutePath(boost::filesystem::canonical(bpath));
+
+  _os_trace->step();
+
+}
+
+int
+Tracer::start()
+{
   return startProcessingEvents();
 }
 
